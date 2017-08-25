@@ -108,12 +108,19 @@ impl Service for IDService {
 }
 
 
-pub fn start_server<E: IDGenerator + Send + Sync + Sized + 'static>(generator: E, addr: &str) {
+pub fn start_server<E: IDGenerator + Send + Sync + Sized + 'static>(generator: E, bind_addr: &str) {
     // Specify the localhost address
-    let addr = addr.parse().unwrap();
+    let addr = bind_addr.parse();
+
+    if let Err(_) = addr {
+        error!("Failed to resolve: {:?}", bind_addr);
+        return
+    }
+
+    info!("Starting server on {}", bind_addr);
 
     // The builder requires a protocol and an address
-    let server = TcpServer::new(IDProto, addr);
+    let server = TcpServer::new(IDProto, addr.unwrap());
 
     let generator = Arc::new(Mutex::new(generator));
 

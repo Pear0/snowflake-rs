@@ -20,7 +20,8 @@ mod server;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use generator::{BasicIDGenerator, IDGenerator};
 use multi_generator::MultiIDGenerator;
-use std::iter::FromIterator;
+use std::process::exit;
+use std::num;
 
 // January 1, 2010 00:00:00 UTC
 pub const DEFAULT_EPOCH: i64 = 1262304000;
@@ -87,7 +88,13 @@ fn resolve_epoch(matches: &ArgMatches<'static>) -> i64 {
     if matches.occurrences_of("epoch") > 0 {
         match matches.value_of("epoch").unwrap() {
             "now" => system_millis(),
-            id => id.parse::<i64>().unwrap() * 1000,
+            id => match id.parse::<i64>() {
+                Ok(t) => t * 1000,
+                Err(_) => {
+                    error!("{:?} is not a valid integer epoch", id);
+                    exit(1)
+                }
+            },
         }
     } else {
         DEFAULT_EPOCH * 1000
@@ -97,14 +104,14 @@ fn resolve_epoch(matches: &ArgMatches<'static>) -> i64 {
 fn create_generator_from_common(matches: &ArgMatches<'static>) -> MultiIDGenerator {
     let epoch = resolve_epoch(matches);
 
-    info!("Epoch: {:?}", epoch);
+    debug!("Epoch: {:?}", epoch);
 
     let machine_ids: Vec<_> = matches.values_of("machine").unwrap()
         .map(|x| x.parse::<u32>().unwrap())
 
         .collect();
 
-    info!("IDs: {:?}", machine_ids);
+    debug!("IDs: {:?}", machine_ids);
 
     let generators: Vec<_> = machine_ids.into_iter().map(|id| BasicIDGenerator::new(epoch, id)).collect();
 
