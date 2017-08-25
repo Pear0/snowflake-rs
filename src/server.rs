@@ -1,15 +1,10 @@
 use std::io;
-use std::mem::transmute;
-use std::net::*;
-use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 use bytes::{BytesMut, BufMut, BigEndian};
 
-use futures::{Async, future, Future, BoxFuture, Stream, Poll};
-use tokio_io::{io as tok_io, AsyncRead, AsyncWrite};
+use futures::{Async, future, BoxFuture, Future, Poll};
+use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Decoder, Encoder, Framed};
-use tokio_core::net::TcpListener;
-use tokio_core::reactor::Core;
 use tokio_proto::TcpServer;
 use tokio_proto::pipeline::ServerProto;
 use tokio_service::Service;
@@ -29,11 +24,10 @@ impl Decoder for IDCodec {
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         if src.len() > 0 {
             Ok(Some(IDRequest { request_code: src.split_to(1).first().unwrap().clone() }))
-        }else {
+        } else {
             Ok(None)
         }
     }
-
 }
 
 pub struct IDResponse {
@@ -45,11 +39,9 @@ impl Encoder for IDCodec {
     type Error = io::Error;
 
     fn encode(&mut self, item: IDResponse, dst: &mut BytesMut) -> Result<(), io::Error> {
-
         dst.put_i64::<BigEndian>(item.id);
 
         Ok(())
-
     }
 }
 
@@ -82,7 +74,7 @@ impl Future for IDFuture {
         let mut generator = self.generator.lock().unwrap();
 
         match generator.next() {
-            Some(id) =>  Ok(Async::Ready(id)),
+            Some(id) => Ok(Async::Ready(id)),
             None => Ok(Async::NotReady),
         }
     }
@@ -108,7 +100,7 @@ impl Service for IDService {
         // In this case, the response is immediate.
 
         if req.request_code != 0x50 {
-            return future::ok(IDResponse{ id: -1 }).boxed()
+            return future::ok(IDResponse { id: -1 }).boxed()
         }
 
         IDFuture { generator: self.generator.clone() }.map(|id| IDResponse { id: id }).boxed()
@@ -128,6 +120,5 @@ pub fn start_server(generator: IDGenerator, addr: &str) {
     // We provide a way to *instantiate* the service for each new
     // connection; here, we just immediately return a new instance.
     server.serve(move || Ok(IDService { generator: generator.clone() }));
-
 }
 
