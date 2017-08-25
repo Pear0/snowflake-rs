@@ -24,9 +24,13 @@ impl IDGenerator for MultiIDGenerator {
 
     fn generate(&mut self) -> Option<i64> {
         for _ in 0..self.delegates.len() {
-            self.last_index = (self.last_index + 1) % self.delegates.len();
+            let mut index = self.last_index + 1;
+            if index == self.delegates.len() {
+                index = 0;
+            }
+            self.last_index = index;
 
-            if let Some(id) = self.delegates[self.last_index].generate() {
+            if let Some(id) = self.delegates[index].generate() {
                 return Some(id)
             }
         }
