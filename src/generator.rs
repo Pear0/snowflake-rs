@@ -1,8 +1,12 @@
 
 use super::system_millis;
 
+pub trait IDGenerator {
+    fn generate(&mut self) -> Option<i64>;
+}
+
 #[derive(Debug)]
-pub struct IDGenerator {
+pub struct BasicIDGenerator {
     start_epoch: i64,
     machine_id: u32,
 
@@ -11,9 +15,9 @@ pub struct IDGenerator {
     rollover_sequence_id: i32
 }
 
-impl IDGenerator {
-    pub fn new(start_epoch: i64, machine_id: u32) -> IDGenerator {
-        IDGenerator {
+impl BasicIDGenerator {
+    pub fn new(start_epoch: i64, machine_id: u32) -> BasicIDGenerator {
+        BasicIDGenerator {
             start_epoch: start_epoch,
             machine_id: machine_id,
             time: system_millis(),
@@ -28,10 +32,8 @@ impl IDGenerator {
     }
 }
 
-impl Iterator for IDGenerator {
-    type Item = i64;
-
-    fn next(&mut self) -> Option<i64> {
+impl IDGenerator for BasicIDGenerator {
+    fn generate(&mut self) -> Option<i64> {
         let millis = system_millis();
 
         if millis > self.time {
@@ -56,6 +58,14 @@ impl Iterator for IDGenerator {
             self.sequence_id = (self.sequence_id + 1) & 0xfff
         }
 
-        Some(IDGenerator::id_from_parts(self.start_epoch, self.time, self.machine_id, sequence_id))
+        Some(BasicIDGenerator::id_from_parts(self.start_epoch, self.time, self.machine_id, sequence_id))
+    }
+}
+
+impl Iterator for BasicIDGenerator {
+    type Item = i64;
+
+    fn next(&mut self) -> Option<i64> {
+        self.generate()
     }
 }

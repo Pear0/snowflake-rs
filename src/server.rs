@@ -63,7 +63,7 @@ impl<T: AsyncRead + AsyncWrite + 'static> ServerProto<T> for IDProto {
 }
 
 pub struct IDFuture {
-    generator: Arc<Mutex<IDGenerator>>,
+    generator: Arc<Mutex<IDGenerator + Send + Sync>>,
 }
 
 impl Future for IDFuture {
@@ -73,7 +73,7 @@ impl Future for IDFuture {
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         let mut generator = self.generator.lock().unwrap();
 
-        match generator.next() {
+        match generator.generate() {
             Some(id) => Ok(Async::Ready(id)),
             None => Ok(Async::NotReady),
         }
@@ -81,7 +81,7 @@ impl Future for IDFuture {
 }
 
 pub struct IDService {
-    generator: Arc<Mutex<IDGenerator>>,
+    generator: Arc<Mutex<IDGenerator + Send + Sync>>,
 }
 
 impl Service for IDService {
@@ -108,7 +108,7 @@ impl Service for IDService {
 }
 
 
-pub fn start_server(generator: IDGenerator, addr: &str) {
+pub fn start_server<E: IDGenerator + Send + Sync + Sized + 'static>(generator: E, addr: &str) {
     // Specify the localhost address
     let addr = addr.parse().unwrap();
 
