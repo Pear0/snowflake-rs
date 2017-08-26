@@ -21,7 +21,6 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use generator::{BasicIDGenerator, IDGenerator};
 use multi_generator::MultiIDGenerator;
 use std::process::exit;
-use std::num;
 
 // January 1, 2010 00:00:00 UTC
 pub const DEFAULT_EPOCH: i64 = 1262304000;

@@ -2,7 +2,7 @@ use std::io;
 use std::sync::{Arc, Mutex};
 use bytes::{BytesMut, BufMut, BigEndian};
 
-use futures::{Async, future, BoxFuture, Future, Poll};
+use futures::{Async, future, Future, Poll};
 use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Decoder, Encoder, Framed};
 use tokio_proto::TcpServer;
@@ -10,6 +10,8 @@ use tokio_proto::pipeline::ServerProto;
 use tokio_service::Service;
 
 use generator::IDGenerator;
+
+type BoxFuture<T, E> = ::std::boxed::Box<Future<Item = T, Error = E> + Send>;
 
 pub struct IDCodec;
 
@@ -100,10 +102,10 @@ impl Service for IDService {
         // In this case, the response is immediate.
 
         if req.request_code != 0x50 {
-            return future::ok(IDResponse { id: -1 }).boxed()
+            return Box::new(future::ok(IDResponse { id: -1 }))
         }
 
-        IDFuture { generator: self.generator.clone() }.map(|id| IDResponse { id: id }).boxed()
+        Box::new(IDFuture { generator: self.generator.clone() }.map(|id| IDResponse { id: id }))
     }
 }
 
